@@ -1,20 +1,19 @@
-package de.simonsator.partyandfriends.extensions.atparty;
+package de.simonsator.partyandfriends.velocity.extensions.atparty;
 
-import de.simonsator.partyandfriends.api.PAFExtension;
-import de.simonsator.partyandfriends.api.pafplayers.OnlinePAFPlayer;
-import de.simonsator.partyandfriends.api.pafplayers.PAFPlayerManager;
-import de.simonsator.partyandfriends.extensions.atparty.configuration.APConfigLoader;
-import de.simonsator.partyandfriends.main.Main;
-import de.simonsator.partyandfriends.party.command.PartyCommand;
-import de.simonsator.partyandfriends.party.subcommand.Chat;
-import de.simonsator.partyandfriends.utilities.ConfigurationCreator;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.event.ChatEvent;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.event.EventHandler;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.player.PlayerChatEvent;
+import de.simonsator.partyandfriends.velocity.api.PAFExtension;
+import de.simonsator.partyandfriends.velocity.api.pafplayers.OnlinePAFPlayer;
+import de.simonsator.partyandfriends.velocity.api.pafplayers.PAFPlayerManager;
+import de.simonsator.partyandfriends.velocity.extensions.atparty.configuration.APConfigLoader;
+import de.simonsator.partyandfriends.velocity.main.Main;
+import de.simonsator.partyandfriends.velocity.party.command.PartyCommand;
+import de.simonsator.partyandfriends.velocity.party.subcommand.Chat;
+import de.simonsator.partyandfriends.velocity.utilities.ConfigurationCreator;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,9 +21,13 @@ import java.util.List;
  * @author Simonsator
  * @version 1.0.0 10.03.17
  */
-public class APMain extends PAFExtension implements Listener {
+public class APMain extends PAFExtension {
 	private Chat chatCommand;
 	private ArrayList<String> keyWords;
+
+	public APMain(Path folder) {
+		super(folder);
+	}
 
 	public void onEnable() {
 		chatCommand = (Chat) PartyCommand.getInstance().getSubCommand(Chat.class);
@@ -46,16 +49,19 @@ public class APMain extends PAFExtension implements Listener {
 		}
 	}
 
-	@EventHandler
-	public void onMessage(ChatEvent pEvent) {
-		if (!(pEvent.getSender() instanceof ProxiedPlayer))
-			return;
+	@Override
+	public String getName() {
+		return "AtParty";
+	}
+
+	@Subscribe
+	public void onMessage(PlayerChatEvent pEvent) {
 		String keyWordUsed = getKeyWordUsed(pEvent.getMessage());
 		if (keyWordUsed == null)
 			return;
-		pEvent.setCancelled(true);
+		pEvent.setResult(PlayerChatEvent.ChatResult.denied());
 		getAdapter().runAsync(Main.getInstance(), () -> {
-			OnlinePAFPlayer pPlayer = PAFPlayerManager.getInstance().getPlayer((ProxiedPlayer) pEvent.getSender());
+			OnlinePAFPlayer pPlayer = PAFPlayerManager.getInstance().getPlayer(pEvent.getPlayer());
 			chatCommand.onCommand(pPlayer, pEvent.getMessage().substring(keyWordUsed.length()).split("\\s+"));
 		});
 	}
